@@ -46,17 +46,22 @@ const addData = (tableName, saveData, isEdit = false) =>
     };
   });
 
-const deleteDb = () =>
+const deleteDb = (id) =>
   new Promise((resolve, reject) => {
-    if (dbObject == null) {
+    const objectStore = dbObject
+      .transaction(["person"], "readwrite")
+      .objectStore("person");
+    if (dbObject == null || !id) {
       reject("dbObject 为 null");
       return;
     }
-    const request = window.indexedDB.deleteDatabase(DB_NAME);
+    const request = objectStore.delete(id);
     request.onerror = (e) => {
+      console.log(e);
       reject(`数据库删除失败: ${e}`);
     };
     request.onsuccess = () => {
+      console.log("数据库删除成功");
       resolve("数据库删除成功");
     };
   });

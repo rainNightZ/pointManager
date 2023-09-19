@@ -67,10 +67,10 @@
           label="手机号"
           width="180"
         ></el-table-column>
-        <el-table-column prop="name" label="姓名" width="180"></el-table-column>
+        <el-table-column prop="name" label="姓名"></el-table-column>
         <el-table-column prop="point" label="积分"></el-table-column>
         <el-table-column prop="time" label="更新时间"></el-table-column>
-        <el-table-column label="操作">
+        <el-table-column label="操作" min-width="150px">
           <template slot-scope="scoped">
             <el-button
               type="primary"
@@ -78,6 +78,13 @@
               @click="editConsumer(scoped.row)"
               icon="el-icon-edit"
               >编辑</el-button
+            >
+            <el-button
+              type="danger"
+              size="mini"
+              @click="deletePhone(scoped.row)"
+              icon="el-icon-delete"
+              >删除</el-button
             >
           </template>
         </el-table-column>
@@ -95,7 +102,7 @@
             <el-input
               v-model="form.phone"
               autocomplete="off"
-              disabled
+              :disabled="!isEdit"
             ></el-input>
           </el-form-item>
           <el-form-item label="积分" aria-required="">
@@ -118,20 +125,14 @@ import * as XLSX from "xlsx";
 export default {
   data() {
     return {
-      consumerData: [
-        {
-          point: 0,
-          phone: "13333334434",
-          name: "王小虎",
-          time: "2023-9-15",
-        },
-      ],
+      consumerData: [],
       form: {
         name: "",
         phone: "",
         point: "",
       },
       search: "",
+      tempPhone: "",
       dialogFormVisible: false,
       isEdit: false,
     };
@@ -182,7 +183,21 @@ export default {
     editConsumer(row) {
       this.isEdit = true;
       this.form = JSON.parse(JSON.stringify(row));
+      this.tempPhone = this.form.phone;
       this.dialogFormVisible = true;
+    },
+    deletePhone(row) {
+      this.$confirm("是否删除?", "提示", {
+        confirmButtonText: "确定",
+        cancelButtonText: "取消",
+        type: "warning",
+      })
+        .then(() => {
+          dbMethod.deleteDb(row.phone).then(() => {
+            this.getData();
+          });
+        })
+        .catch(() => {});
     },
     editPointData() {
       const date = new Date();
@@ -197,6 +212,26 @@ export default {
       console.log(formattedDate); // 输出类似 '2021-05-14 16:30:00' 的字符串
       this.form.time = formattedDate;
       dbMethod.addData("person", this.form, this.isEdit);
+      if (this.tempPhone !== this.form.phone && this.isEdit) {
+        this.$confirm("是否删除原有手机号?", "提示", {
+          confirmButtonText: "确定",
+          cancelButtonText: "取消",
+          type: "warning",
+        })
+          .then(() => {
+            dbMethod
+              .deleteDb(this.tempPhone)
+              .then(() => {
+                this.tempPhone = "";
+                this.getData();
+              })
+              .catch(() => {
+                this.tempPhone = "";
+                this.getData();
+              });
+          })
+          .catch(() => {});
+      }
       this.closeForm();
       this.search = "";
       this.getData();
